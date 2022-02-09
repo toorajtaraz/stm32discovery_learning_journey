@@ -1,0 +1,817 @@
+[
+    {
+        "id": "8381c865.236028",
+        "type": "subflow",
+        "name": "Single value",
+        "info": "The 'single value' subflow allows to extract data from processing node.\r\n\r\n * Filter Data to extract only one variable after the \"processing node\" step .\r\n * Modify the message to fit with standard widgets such as gauges.\r\n * Limit the number of messages to a maximum of 10 msg per second.\r\n\r\n### **Input**\r\n\r\nThe subflow 'single value' takes in input the `msg.payload`\r\nfrom the processing output. All the messages sent by the processing node have the same structure.\r\n\r\n    \"payload\": {\r\n        \"groupname\": \"Snapshot2\",\r\n        \"variabledata\": [\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            },\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            },\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            }\r\n        ],\r\n        \"variablename\": \"int2\"\r\n      }\r\n    }\r\n\r\n### **Filter on selected variable**\r\nSeveral messages are sent by the processing node for each variable, so the first step of this 'single value' subflow is to filter and keep only messages related to the selected variable.\r\nThe 'filter variable' node will only keep messages with the right `variablename` key.\r\n\r\n### **Extract duplets table**\r\n\r\nThe received message is an Object containing {groupname, variabledata[array], variablename}.  \r\nThe array contains two variables :\r\n - `y` the value \r\n - `x` the time\r\n\r\nA single message contains multiple pairs of values extract at a regular time interval.\r\nThe time interval depends on the acquisition frequency.\r\nWith the 'change' node and the `set` property, the `msg.payload` is set to \r\n`msg.payload.variabledata`, only the data variable array is set into msg.payload.\r\n\r\n    \"payload\": {\r\n        \"variabledata\": [\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            },\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            },\r\n            {\r\n                \"y\": \"9\",\r\n                \"x\": \"1567509421459\"\r\n            }\r\n        ]\r\n    }\r\n\r\n### **Split duplets table**\r\n\r\nThe data variable array is split with a length of one in smaller objects by the 'split' node.\r\nEach new object contains two subvariables : `y` and `x`.\r\n\r\n    \"payload\": {\r\n        \"y\": \"9\",\r\n        \"x\": \"1567509421459\"\r\n    }\r\n\r\n\r\n### **Limit the number of messages**\r\n\r\nThe 'delay' node allows to limit the maximum number of message per second.\r\nIn the 'single value' subflow, one message is extracted per second.\r\n\r\n>_Be careful, a dashboard saturation risk exists if too many messages are received per second._\r\n\r\n### **Extract only y values**\r\n\r\nThe `msg.payload` is set to `msg.payload.y` with the `set` property. \r\nOnly `y` variable is set into msg.payload as single value.\r\n\r\n    \"payload\": { \r\n        \"y\": \"9\" \r\n    }\r\n\r\n### **Output** \r\n\r\nSome widgets such as the gauge and the text node are using the `msg.payload` property.  \r\nThe output node is linked to a gauge that allows to see the evolution \r\nof the `y` variable as a function of time.\r\n\r\n\r\n![subflow_gauge](images/subflow_gauge.png)\r\n\r\n### **Details**\r\n\r\nNote : The debug node allows to see clearly and easily the \r\nmessage at the node output.  \r\n\r\n\r\n> More details on : [Node-Red](https://nodered.org/docs/user-guide/editor/workspace/subflows)\r\n\r\n\r\n-------\r\n\r\n",
+        "category": "",
+        "in": [
+            {
+                "x": 40,
+                "y": 60,
+                "wires": [
+                    {
+                        "id": "3c5ffe0d.9063b2"
+                    }
+                ]
+            }
+        ],
+        "out": [
+            {
+                "x": 780,
+                "y": 140,
+                "wires": [
+                    {
+                        "id": "66397fd3.d8111",
+                        "port": 0
+                    }
+                ]
+            }
+        ],
+        "env": [
+            {
+                "name": "varfilter",
+                "type": "str",
+                "value": "",
+                "ui": {
+                    "icon": "font-awesome/fa-filter",
+                    "label": {
+                        "en-US": "Variable"
+                    },
+                    "type": "input",
+                    "opts": {
+                        "types": [
+                            "str"
+                        ]
+                    }
+                }
+            }
+        ],
+        "color": "#3CB4E6"
+    },
+    {
+        "id": "3c5ffe0d.9063b2",
+        "type": "switch",
+        "z": "8381c865.236028",
+        "name": "filter variable",
+        "property": "payload.variablename",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "varfilter",
+                "vt": "env"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 170,
+        "y": 60,
+        "wires": [
+            [
+                "4e5ba7a5.14dec8"
+            ]
+        ]
+    },
+    {
+        "id": "4e5ba7a5.14dec8",
+        "type": "change",
+        "z": "8381c865.236028",
+        "name": "keep only table of duplets",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.variabledata",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 430,
+        "y": 60,
+        "wires": [
+            [
+                "42bc6ed.5b20d9"
+            ]
+        ]
+    },
+    {
+        "id": "42bc6ed.5b20d9",
+        "type": "split",
+        "z": "8381c865.236028",
+        "name": "Split a table[1..n] of duplets in n msg of single duplet",
+        "splt": "\\n",
+        "spltType": "str",
+        "arraySplt": 1,
+        "arraySpltType": "len",
+        "stream": false,
+        "addname": "",
+        "x": 800,
+        "y": 60,
+        "wires": [
+            [
+                "8b8ddb84.6fb208"
+            ]
+        ]
+    },
+    {
+        "id": "8b8ddb84.6fb208",
+        "type": "delay",
+        "z": "8381c865.236028",
+        "name": "",
+        "pauseType": "rate",
+        "timeout": "5",
+        "timeoutUnits": "seconds",
+        "rate": "10",
+        "nbRateUnits": "1",
+        "rateUnits": "second",
+        "randomFirst": "1",
+        "randomLast": "5",
+        "randomUnits": "seconds",
+        "drop": true,
+        "x": 200,
+        "y": 140,
+        "wires": [
+            [
+                "66397fd3.d8111"
+            ]
+        ]
+    },
+    {
+        "id": "66397fd3.d8111",
+        "type": "change",
+        "z": "8381c865.236028",
+        "name": "keep only value and delete timestamp",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "payload.y",
+                "tot": "msg"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 490,
+        "y": 140,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "7b9ed63e.2138f8",
+        "type": "tab",
+        "label": "Basic_Flow",
+        "disabled": false,
+        "info": "# Basic flow to start with STM32CubeMonitor."
+    },
+    {
+        "id": "1ebbb430.dac7dc",
+        "type": "ui_chartst",
+        "z": "7b9ed63e.2138f8",
+        "group": "f9c34dde.1e2f4",
+        "name": "SineCosine",
+        "order": 4,
+        "width": 15,
+        "height": 9,
+        "chartType": "line",
+        "curveType": "linear",
+        "duration": "48",
+        "ymin": "",
+        "ymax": "",
+        "x": 890,
+        "y": 320,
+        "wires": []
+    },
+    {
+        "id": "6013fb0b.5b7504",
+        "type": "acquisition out",
+        "z": "7b9ed63e.2138f8",
+        "name": "myProbe_Out",
+        "probeconfig": "cdcde58e.2d4ac8",
+        "x": 720,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "4a573fb0.4bc99",
+        "type": "acquisition in",
+        "z": "7b9ed63e.2138f8",
+        "name": "myProbe_In",
+        "probeconfig": "cdcde58e.2d4ac8",
+        "x": 130,
+        "y": 280,
+        "wires": [
+            [
+                "a7c3e070.5a6c"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "d59587ff.cd1748",
+        "type": "variables",
+        "z": "7b9ed63e.2138f8",
+        "groupname": "calcVars",
+        "accesspoint": 0,
+        "execonfig": "25605ca.26876a4",
+        "variablelist": [],
+        "triggerstartmode": "manual",
+        "triggername": "cos_var",
+        "triggerthreshold": "30000",
+        "frequency": "",
+        "frequencyType": "0",
+        "snapshotheader": "",
+        "mode": "direct",
+        "lastImportedTime": 1640267877691,
+        "openStatus": true,
+        "x": 320,
+        "y": 120,
+        "wires": [
+            [
+                "6013fb0b.5b7504"
+            ]
+        ]
+    },
+    {
+        "id": "fc00295e.79ada8",
+        "type": "ui_button",
+        "z": "7b9ed63e.2138f8",
+        "name": "",
+        "group": "f9c34dde.1e2f4",
+        "order": 3,
+        "width": 5,
+        "height": 1,
+        "passthru": false,
+        "label": "Clear Graphs",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "icon": "",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "clear",
+        "x": 510,
+        "y": 440,
+        "wires": [
+            [
+                "1af71470.b8f51c",
+                "1ebbb430.dac7dc"
+            ]
+        ]
+    },
+    {
+        "id": "5fd51c96.2330e4",
+        "type": "ui_button",
+        "z": "7b9ed63e.2138f8",
+        "name": "",
+        "group": "f9c34dde.1e2f4",
+        "order": 1,
+        "width": 5,
+        "height": 1,
+        "passthru": false,
+        "label": "START Acquisition",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "icon": "",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "start",
+        "x": 110,
+        "y": 80,
+        "wires": [
+            [
+                "d59587ff.cd1748"
+            ]
+        ]
+    },
+    {
+        "id": "52eadfe3.2c8cc",
+        "type": "ui_button",
+        "z": "7b9ed63e.2138f8",
+        "name": "",
+        "group": "f9c34dde.1e2f4",
+        "order": 2,
+        "width": 5,
+        "height": 1,
+        "passthru": true,
+        "label": "STOP Acquisition",
+        "tooltip": "",
+        "color": "",
+        "bgcolor": "",
+        "icon": "",
+        "payload": "",
+        "payloadType": "str",
+        "topic": "stop",
+        "x": 110,
+        "y": 160,
+        "wires": [
+            [
+                "d59587ff.cd1748"
+            ]
+        ]
+    },
+    {
+        "id": "a7c3e070.5a6c",
+        "type": "processing",
+        "z": "7b9ed63e.2138f8",
+        "groupname": "calcVars",
+        "groupid": "d59587ff.cd1748",
+        "expressions": [],
+        "statistics": [],
+        "logmode": "full",
+        "x": 420,
+        "y": 240,
+        "wires": [
+            [
+                "3c98f698.34fe8a",
+                "6981b294.e9715c",
+                "df296a1.f3c6798",
+                "df81c8f0.37b858"
+            ],
+            []
+        ]
+    },
+    {
+        "id": "e280ec13.08606",
+        "type": "ui_gauge",
+        "z": "7b9ed63e.2138f8",
+        "name": "",
+        "group": "f9c34dde.1e2f4",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Temp",
+        "label": "C",
+        "format": "{{value}}",
+        "min": "-55",
+        "max": "150",
+        "colors": [
+            "#00b500",
+            "#e6e600",
+            "#ca3838"
+        ],
+        "seg1": "",
+        "seg2": "",
+        "x": 870,
+        "y": 440,
+        "wires": []
+    },
+    {
+        "id": "3c98f698.34fe8a",
+        "type": "subflow:8381c865.236028",
+        "z": "7b9ed63e.2138f8",
+        "name": "temp",
+        "env": [
+            {
+                "name": "varfilter",
+                "value": "temp",
+                "type": "str"
+            }
+        ],
+        "x": 610,
+        "y": 320,
+        "wires": [
+            [
+                "e280ec13.08606"
+            ]
+        ]
+    },
+    {
+        "id": "1af71470.b8f51c",
+        "type": "ui_chartst",
+        "z": "7b9ed63e.2138f8",
+        "group": "f9c34dde.1e2f4",
+        "name": "Sqrt",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "chartType": "line",
+        "curveType": "linear",
+        "duration": "100",
+        "ymin": "",
+        "ymax": "",
+        "x": 890,
+        "y": 200,
+        "wires": []
+    },
+    {
+        "id": "6981b294.e9715c",
+        "type": "switch",
+        "z": "7b9ed63e.2138f8",
+        "name": "Cosine",
+        "property": "payload.variablename",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "cos_var",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 640,
+        "y": 220,
+        "wires": [
+            [
+                "1ebbb430.dac7dc"
+            ]
+        ]
+    },
+    {
+        "id": "df296a1.f3c6798",
+        "type": "switch",
+        "z": "7b9ed63e.2138f8",
+        "name": "Sqrt",
+        "property": "payload.variablename",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "sqrt_var",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 630,
+        "y": 260,
+        "wires": [
+            [
+                "1af71470.b8f51c"
+            ]
+        ]
+    },
+    {
+        "id": "df81c8f0.37b858",
+        "type": "switch",
+        "z": "7b9ed63e.2138f8",
+        "name": "Sine",
+        "property": "payload.variablename",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "sin_var",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 660,
+        "y": 160,
+        "wires": [
+            [
+                "1ebbb430.dac7dc"
+            ]
+        ]
+    },
+    {
+        "id": "f9c34dde.1e2f4",
+        "type": "ui_group",
+        "name": "Chart",
+        "tab": "17d09b07.741a55",
+        "order": 1,
+        "disp": true,
+        "width": 15,
+        "collapse": false
+    },
+    {
+        "id": "cdcde58e.2d4ac8",
+        "type": "probe",
+        "probeid": "066CFF495252717267062247",
+        "probename": "ST-Link v2-1B (...62247)",
+        "protocol": "SWD",
+        "frequency": "1.8 MHz - Default",
+        "probeproperty": "{\"SWD\":[\"4.6 MHz\",\"1.8 MHz - Default\",\"950 kHz\",\"400 kHz\",\"150 kHz\"],\"JTAG\":[\"18 MHz\",\"9 MHz\",\"4.5 MHz\",\"2.25 MHz\",\"1.12 MHz - Default\",\"560 kHz\",\"280 kHz\",\"140 kHz\"]}",
+        "probeversion": "ST Link firmware version V2.J38",
+        "connectionType": "p2p"
+    },
+    {
+        "id": "25605ca.26876a4",
+        "type": "exe-config",
+        "name": "stm32f3discovery",
+        "exefile": "/home/toorajtaraz/Documents/projects/STM32/debug_monitor_learning/Debug/debug_monitor_learning.elf",
+        "exefolder": "/home/toorajtaraz/Documents/projects/STM32/debug_monitor_learning/Debug",
+        "exevariablelist": [
+            {
+                "address": "0x08006508",
+                "name": "AHBPrescTable[0]",
+                "type": 1
+            },
+            {
+                "address": "0x08006518",
+                "name": "aPLLMULFactorTable[0]",
+                "type": 1
+            },
+            {
+                "address": "0x08006528",
+                "name": "aPredivFactorTable[0]",
+                "type": 1
+            },
+            {
+                "address": "0x2000009c",
+                "name": "cos_var",
+                "type": 9,
+                "checked": true
+            },
+            {
+                "address": "0x200000e0",
+                "name": "hadc2.DMA_Handle",
+                "type": 5
+            },
+            {
+                "address": "0x200000ec",
+                "name": "hadc2.ErrorCode",
+                "type": 5
+            },
+            {
+                "address": "0x200000ac",
+                "name": "hadc2.Init.ClockPrescaler",
+                "type": 5
+            },
+            {
+                "address": "0x200000c1",
+                "name": "hadc2.Init.ContinuousConvMode",
+                "type": 2
+            },
+            {
+                "address": "0x200000b4",
+                "name": "hadc2.Init.DataAlign",
+                "type": 5
+            },
+            {
+                "address": "0x200000c8",
+                "name": "hadc2.Init.DiscontinuousConvMode",
+                "type": 2
+            },
+            {
+                "address": "0x200000d8",
+                "name": "hadc2.Init.DMAContinuousRequests",
+                "type": 2
+            },
+            {
+                "address": "0x200000bc",
+                "name": "hadc2.Init.EOCSelection",
+                "type": 5
+            },
+            {
+                "address": "0x200000d0",
+                "name": "hadc2.Init.ExternalTrigConv",
+                "type": 5
+            },
+            {
+                "address": "0x200000d4",
+                "name": "hadc2.Init.ExternalTrigConvEdge",
+                "type": 5
+            },
+            {
+                "address": "0x200000c0",
+                "name": "hadc2.Init.LowPowerAutoWait",
+                "type": 2
+            },
+            {
+                "address": "0x200000c4",
+                "name": "hadc2.Init.NbrOfConversion",
+                "type": 5
+            },
+            {
+                "address": "0x200000cc",
+                "name": "hadc2.Init.NbrOfDiscConversion",
+                "type": 5
+            },
+            {
+                "address": "0x200000dc",
+                "name": "hadc2.Init.Overrun",
+                "type": 5
+            },
+            {
+                "address": "0x200000b0",
+                "name": "hadc2.Init.Resolution",
+                "type": 5
+            },
+            {
+                "address": "0x200000b8",
+                "name": "hadc2.Init.ScanConvMode",
+                "type": 5
+            },
+            {
+                "address": "0x200000f4",
+                "name": "hadc2.InjectionConfig.ChannelCount",
+                "type": 5
+            },
+            {
+                "address": "0x200000f0",
+                "name": "hadc2.InjectionConfig.ContextQueue",
+                "type": 5
+            },
+            {
+                "address": "0x200000a8",
+                "name": "hadc2.Instance",
+                "type": 5
+            },
+            {
+                "address": "0x200000e4",
+                "name": "hadc2.Lock",
+                "type": 2
+            },
+            {
+                "address": "0x200000e8",
+                "name": "hadc2.State",
+                "type": 5
+            },
+            {
+                "address": "0x2000014c",
+                "name": "hrtc.Init.AsynchPrediv",
+                "type": 5
+            },
+            {
+                "address": "0x20000148",
+                "name": "hrtc.Init.HourFormat",
+                "type": 5
+            },
+            {
+                "address": "0x20000154",
+                "name": "hrtc.Init.OutPut",
+                "type": 5
+            },
+            {
+                "address": "0x20000158",
+                "name": "hrtc.Init.OutPutPolarity",
+                "type": 5
+            },
+            {
+                "address": "0x2000015c",
+                "name": "hrtc.Init.OutPutType",
+                "type": 5
+            },
+            {
+                "address": "0x20000150",
+                "name": "hrtc.Init.SynchPrediv",
+                "type": 5
+            },
+            {
+                "address": "0x20000144",
+                "name": "hrtc.Instance",
+                "type": 5
+            },
+            {
+                "address": "0x20000160",
+                "name": "hrtc.Lock",
+                "type": 2
+            },
+            {
+                "address": "0x20000161",
+                "name": "hrtc.State",
+                "type": 2
+            },
+            {
+                "address": "0x20000114",
+                "name": "htim3.Channel",
+                "type": 2
+            },
+            {
+                "address": "0x2000013c",
+                "name": "htim3.ChannelNState[0]",
+                "type": 2
+            },
+            {
+                "address": "0x20000136",
+                "name": "htim3.ChannelState[0]",
+                "type": 2
+            },
+            {
+                "address": "0x20000140",
+                "name": "htim3.DMABurstState",
+                "type": 2
+            },
+            {
+                "address": "0x20000118",
+                "name": "htim3.hdma[0]",
+                "type": 5
+            },
+            {
+                "address": "0x20000110",
+                "name": "htim3.Init.AutoReloadPreload",
+                "type": 5
+            },
+            {
+                "address": "0x20000108",
+                "name": "htim3.Init.ClockDivision",
+                "type": 5
+            },
+            {
+                "address": "0x20000100",
+                "name": "htim3.Init.CounterMode",
+                "type": 5
+            },
+            {
+                "address": "0x20000104",
+                "name": "htim3.Init.Period",
+                "type": 5
+            },
+            {
+                "address": "0x200000fc",
+                "name": "htim3.Init.Prescaler",
+                "type": 5
+            },
+            {
+                "address": "0x2000010c",
+                "name": "htim3.Init.RepetitionCounter",
+                "type": 5
+            },
+            {
+                "address": "0x200000f8",
+                "name": "htim3.Instance",
+                "type": 5
+            },
+            {
+                "address": "0x20000134",
+                "name": "htim3.Lock",
+                "type": 2
+            },
+            {
+                "address": "0x20000135",
+                "name": "htim3.State",
+                "type": 2
+            },
+            {
+                "address": "0x20000094",
+                "name": "inc_var",
+                "type": 6
+            },
+            {
+                "address": "0x20000090",
+                "name": "raw_temp",
+                "type": 6
+            },
+            {
+                "address": "0x20000098",
+                "name": "sin_var",
+                "type": 9,
+                "checked": true
+            },
+            {
+                "address": "0x200000a0",
+                "name": "sqrt_var",
+                "type": 9,
+                "checked": true
+            },
+            {
+                "address": "0x20000000",
+                "name": "SystemCoreClock",
+                "type": 5
+            },
+            {
+                "address": "0x200000a4",
+                "name": "temp",
+                "type": 9,
+                "checked": true
+            },
+            {
+                "address": "0x20000164",
+                "name": "uwTick",
+                "type": 5,
+                "checked": false
+            },
+            {
+                "address": "0x20000008",
+                "name": "uwTickFreq",
+                "type": 2
+            },
+            {
+                "address": "0x20000004",
+                "name": "uwTickPrio",
+                "type": 5
+            }
+        ],
+        "expand": false,
+        "filename": "debug_monitor_learning.elf",
+        "exeModifiedTime": 1640267850899,
+        "configLastUpdate": 1640267877358
+    },
+    {
+        "id": "17d09b07.741a55",
+        "type": "ui_tab",
+        "name": "Home",
+        "icon": "dashboard",
+        "disabled": false,
+        "hidden": false
+    }
+]
